@@ -83,8 +83,10 @@ test('every stat cell shares one structure and one height', () => {
   assert.ok(/\.td-stat\{[^}]*justify-content:center/.test(client), 'cell content is centred')
   // Count the rendered cells, not the CSS selectors or the 'td-stats' wrapper,
   // both of which start the same way.
+  // Six cells, drawn as two rows of three.
   const cells = client.match(/className: 'td-stat(?: td-stat-main)?' \}/g)
-  assert.equal(cells?.length, 4, 'four stat cells')
+  assert.equal(cells?.length, 6, 'six stat cells')
+  assert.ok(/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/.test(client), 'three per row')
 })
 
 test('the section declares itself a size container', () => {
@@ -120,6 +122,28 @@ test('the picked file is read before the input is reset', () => {
   const clearAt = body.indexOf("pick.value = ''")
   assert.ok(filesAt > 0 && clearAt > 0, 'both statements are present')
   assert.ok(filesAt < clearAt, 'the file is read before the input is reset')
+})
+
+test('the generation rate drops implausible samples', () => {
+  // A corrupted decode window must not print an impossible number. The host
+  // drops per-call samples above its ceiling and the page guards the aggregate.
+  assert.ok(/MAX_CREDIBLE_TPS = 250/.test(index), 'the host has a ceiling')
+  assert.ok(/MIN_DECODE_MS = 250/.test(index), 'the host has a floor')
+  assert.ok(/rawRate <= MAX_CREDIBLE_TPS/.test(client), 'the page guards the aggregate')
+})
+
+test('reasoning tokens are folded and carried to the page', () => {
+  // The value is recorded in the log and is a real cost driver on these models.
+  assert.ok(/reasoning: count\(usage\.reasoningTokens\)/.test(index), 'the fold reads it')
+  assert.ok(/addColumn\('calls', 'reasoning'/.test(index), 'the ledger stores it')
+  assert.ok(/bucket\[16\] \+= group\.reasoning/.test(index), 'the payload carries it')
+})
+
+test('the first card shows one estimated cost', () => {
+  // The billed / plan-value split was detail nobody asked for at this level.
+  assert.ok(/t\('estimate'\)/.test(client), 'one label')
+  assert.ok(!/planValue/.test(client), 'no plan-value split')
+  assert.ok(!/td-stat-cost-alt/.test(client), 'no second amount')
 })
 
 test('the ranking header counts the rows it draws', () => {
