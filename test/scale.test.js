@@ -59,11 +59,10 @@ test('the aggregated payload is cached across polls', () => {
     'the cache must be keyed by the formatting zone as well')
 })
 
-test('the activity grid is the calendar year, January through December', () => {
-  // The ruler must read 1月 through 12月 in order. A rolling window starts
-  // wherever the current month is and the ruler no longer matches the calendar.
-  assert.ok(/const firstOfRange = `\$\{year\}-01-01`/.test(client), 'the grid starts in January')
-  assert.ok(/const lastOfRange = `\$\{year\}-12-31`/.test(client), 'the grid ends in December')
+test('the activity grid shows a readable window of months', () => {
+  // Fifty-three columns cap a cell at about 10px in this panel, so a full year
+  // is unreadable. The window is short enough for the cells to be legible.
+  assert.ok(/const startMonth = tm - 5/.test(client), 'the window is short enough to read')
   assert.ok(/!labelled.has\(monthKey\)/.test(client), 'each month is labelled once')
   assert.ok(/td-lv5/.test(client), 'the palette has five steps')
 })
@@ -78,7 +77,7 @@ test('the heatmap does not single out today', () => {
 test('every stat cell shares one structure and one height', () => {
   // Three rows in the main cell against two in the others made one card taller
   // than its neighbours.
-  assert.ok(/\.td-stat\{[^}]*min-height:104px/.test(client), 'cells declare a shared minimum height')
+  assert.ok(/\.td-stat\{[^}]*justify-content:center/.test(client), 'cell content is centred')
   // Count the rendered cells, not the CSS selectors or the 'td-stats' wrapper,
   // both of which start the same way.
   const cells = client.match(/className: 'td-stat(?: td-stat-main)?' \}/g)
@@ -103,4 +102,49 @@ test('the account picture is read from the account service', () => {
   assert.ok(/createAvatarStore/.test(client), 'the picture has a shared store')
   assert.ok(/remote\.account\.getProfile/.test(client), 'the picture comes from the account read')
   assert.ok(/td-avatar-strip/.test(client), 'the picture has a strip of its own')
+})
+
+
+/** Read the brand table out of the client so the test needs no copy of it. */
+function brandOf(provider, model) {
+  const start = client.indexOf('const BRANDS = [')
+  const end = client.indexOf('/** The mark for one route', start)
+  assert.ok(start > 0 && end > start, 'the brand table is present')
+  const source = `${client.slice(start, end)}\nreturn { BRANDS }`
+  const { BRANDS } = new Function(source)()
+  const text = `${model} ${provider}`
+  return BRANDS.find((brand) => brand.match.test(text))
+}
+
+test('every model family in the ledger has a brand mark', () => {
+  // An unknown family still renders, but the families this install actually
+  // uses must each have their own glyph: two initials cannot tell
+  // `deepseek-flash` from `deepseek-v4-pro`.
+  const families = {
+    deepseek: ['deepseek-account', 'deepseek-v4.1-flash'],
+    glm: ['buddy', 'glm-5.3-flash'],
+    gemini: ['gemini', 'gemini-3.8-flash'],
+    kimi: ['opencode-go', 'kimi-k2.7-code'],
+    qwen: ['opencode-go', 'qwen3.8-flash'],
+    openai: ['workbuddy', 'gpt-6-astra'],
+    claude: ['buddy', 'claude-opus-5-5'],
+    grok: ['xai', 'grok-4.7'],
+    mimax: ['minimax', 'minimax-m3'],
+    mimo: ['xiaomi', 'mimo-v2.6-flash'],
+    hunyuan: ['tencent', 'hy3'],
+    step: ['stepfun', 'step-5-preview'],
+    ling: ['inclusionai', 'ling-3.1-flash'],
+  }
+  for (const [name, [provider, model]] of Object.entries(families)) {
+    assert.ok(brandOf(provider, model) !== undefined, `${name} has a mark`)
+  }
+  // A model nobody has a mark for still renders, through the initials.
+  assert.equal(brandOf('nobody', 'unheard-of-model'), undefined)
+})
+
+test('a brand mark carries its own colour and a valid SVG body', () => {
+  const brand = brandOf('deepseek-account', 'deepseek-v4.1-flash')
+  assert.match(brand.color, /^#[0-9A-Fa-f]{6}$/)
+  assert.ok(brand.paths.length > 20, 'the mark has a real path')
+  assert.ok(!/currentColor/.test(brand.color), 'the colour is a literal so it does not inherit')
 })
