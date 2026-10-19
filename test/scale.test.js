@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const client = readFileSync(new URL('../lib/client.js', import.meta.url), 'utf8')
+const index = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
 const host = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
 
 test('the model ranking is keyed by route, not by display name', () => {
@@ -99,11 +100,21 @@ test('the top row puts the live note beside the title', () => {
     'the range sits at the far edge of the row')
 })
 
-test('the account picture is read from the account service', () => {
-  // There is no other copy of it in the client.
-  assert.ok(/createAvatarStore/.test(client), 'the picture has a shared store')
-  assert.ok(/remote\.account\.getProfile/.test(client), 'the picture comes from the account read')
-  assert.ok(/td-avatar-strip/.test(client), 'the picture has a strip of its own')
+test('the profile card is the user\'s own, not the account\'s', () => {
+  // A plugin cannot read the account picture, so the card is work the user
+  // supplies: an uploaded picture and a typed name.
+  assert.ok(/createProfileStore/.test(client), 'the card has a shared store')
+  assert.ok(/td-avatar-empty/.test(client), 'an empty slot invites an upload')
+  assert.ok(/shrinkImage/.test(client), 'a picked photo is downscaled before storing')
+  assert.ok(/EditableText/.test(client), 'the name is edited in place')
+  assert.ok(!/remote\.account/.test(client), 'the account service is not used')
+})
+
+test('clearing the picture is a save, not an unsupported value', () => {
+  // The first version rejected the empty string as "unsupported", so a cleared
+  // picture could never be removed.
+  assert.ok(/if \(url === ''\) next\.url = ''/.test(index), 'an empty URL clears the picture')
+  assert.ok(/if \(name !== undefined\)/.test(index), 'a partial save keeps the other field')
 })
 
 
