@@ -110,6 +110,18 @@ test('the profile card is the user\'s own, not the account\'s', () => {
   assert.ok(!/remote\.account/.test(client), 'the account service is not used')
 })
 
+test('the picked file is read before the input is reset', () => {
+  // Resetting a file input's value empties its `files` list. Clearing first made
+  // every upload find no file, so the button did nothing while the name save -
+  // a different path - worked.
+  const start = client.indexOf('const onPickAvatar = useCallback')
+  const body = client.slice(start, client.indexOf('[onSaveProfile]', start))
+  const filesAt = body.indexOf('pick?.files')
+  const clearAt = body.indexOf("pick.value = ''")
+  assert.ok(filesAt > 0 && clearAt > 0, 'both statements are present')
+  assert.ok(filesAt < clearAt, 'the file is read before the input is reset')
+})
+
 test('clearing the picture is a save, not an unsupported value', () => {
   // The first version rejected the empty string as "unsupported", so a cleared
   // picture could never be removed.
