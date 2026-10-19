@@ -124,6 +124,14 @@ test('the picked file is read before the input is reset', () => {
   assert.ok(filesAt < clearAt, 'the file is read before the input is reset')
 })
 
+test('the month ruler reaches both edges of the grid', () => {
+  // The last label sat at the column where December STARTS, so the grid ran four
+  // columns past it and the right edge looked empty.
+  assert.ok(/atEnd = true/.test(client), 'the final label is marked')
+  assert.ok(/gridColumn: `\$\{month\.column \+ 1\} \/ -1`/.test(client), 'it spans to the end')
+  assert.ok(/textAlign: 'right'/.test(client), 'and aligns right')
+})
+
 test('the generation rate drops implausible samples', () => {
   // A corrupted decode window must not print an impossible number. The host
   // drops per-call samples above its ceiling and the page guards the aggregate.
