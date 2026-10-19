@@ -124,12 +124,23 @@ test('the picked file is read before the input is reset', () => {
   assert.ok(filesAt < clearAt, 'the file is read before the input is reset')
 })
 
-test('the month ruler reaches both edges of the grid', () => {
-  // The last label sat at the column where December STARTS, so the grid ran four
-  // columns past it and the right edge looked empty.
-  assert.ok(/atEnd = true/.test(client), 'the final label is marked')
-  assert.ok(/gridColumn: `\$\{month\.column \+ 1\} \/ -1`/.test(client), 'it spans to the end')
-  assert.ok(/textAlign: 'right'/.test(client), 'and aligns right')
+test('the signature is stored beside the name and saved on its own', () => {
+  // Free text under the name, edited and saved the same way the name is.
+  assert.ok(/signature: typeof value\?\.signature === 'string'/.test(index), 'the store reads it')
+  assert.ok(/next\.signature = signature\.trim\(\)\.slice\(0, 120\)/.test(index), 'it is trimmed and capped')
+  assert.ok(/if \(signature !== undefined\)/.test(index), 'a partial save keeps the other fields')
+  assert.ok(/t\('signatureLabel'\)/.test(client), 'the page labels it')
+  assert.ok(/td-identity-signature/.test(client), 'it has its own style')
+})
+
+test('the month ruler has equal gaps and flush ends', () => {
+  // A month is four or five weeks, so pinning a label to each month's first week
+  // left gaps from 39 to 50px. space-between equalises the gaps and still pins
+  // the first and last label to the row's edges.
+  assert.ok(/justify-content:space-between[^}]*\}/.test(client), 'the ruler distributes its labels')
+  assert.ok(/\.td-heat-months\{display:flex/.test(client), 'and is a flex row')
+  // The evenly respaced columns are no longer needed.
+  assert.ok(!/month\.at = first \+ index \* step/.test(client), 'no manual respacing remains')
 })
 
 test('the generation rate drops implausible samples', () => {
