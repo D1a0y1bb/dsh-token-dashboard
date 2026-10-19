@@ -68,10 +68,11 @@ test('the activity grid shows a readable window of months', () => {
 })
 
 test('the heatmap does not single out today', () => {
-  // A ring on one cell of a year reads as an error, not as emphasis.
-  assert.ok(/--td-heat-outline/.test(client), 'the marker is a hairline, not a highlight')
-  assert.ok(!/data-today\]\{outline:1\.5px solid var\(--td-heat-strong\)/.test(client),
-    'today is not outlined in the accent colour')
+  // A ring on one cell of the grid reads as a selection or an error. The test
+  // asserts the absence of the attribute and the rule, not of a variable name:
+  // an earlier version passed while the outline was still drawn.
+  assert.ok(!/data-today/.test(client), 'no cell is marked as today')
+  assert.ok(!/td-cell\[data-today\]/.test(client), 'no rule draws an outline')
 })
 
 test('every stat cell shares one structure and one height', () => {
