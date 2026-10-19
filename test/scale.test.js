@@ -122,6 +122,21 @@ test('the picked file is read before the input is reset', () => {
   assert.ok(filesAt < clearAt, 'the file is read before the input is reset')
 })
 
+test('the ranking header counts the rows it draws', () => {
+  // The header said 10 while the list drew 8: one read the total, the other a
+  // slice literal. Both read the same constant now.
+  assert.ok(/const MODEL_ROWS = 10/.test(client), 'one constant for the model count')
+  assert.ok(/String\(MODEL_ROWS\)/.test(client), 'the header reads it')
+  assert.ok(/slice\(0, MODEL_ROWS\)/.test(client), 'the list reads it')
+  assert.ok(/String\(PROJECT_ROWS\)/.test(client), 'the project header reads its constant')
+  assert.ok(/slice\(0, PROJECT_ROWS\)/.test(client), 'the project list reads it')
+})
+
+test('the top-three block is gone', () => {
+  // It repeated rows 1-3 of the list immediately below it.
+  assert.ok(!/td-podium/.test(client), 'no podium block')
+})
+
 test('a saved profile survives a remount', () => {
   // The store kept its first read forever, and a save updated only the section's
   // own state. Closing and reopening Settings therefore showed the old value and
