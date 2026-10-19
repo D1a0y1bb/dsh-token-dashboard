@@ -96,6 +96,13 @@ test('the section declares itself a size container', () => {
   assert.ok(/@container \(min-width:600px\)/.test(client), 'the wide layout is a container query')
 })
 
+test('every stat caption sits on its row baseline', () => {
+  // The rate cell carries a small unit whose own line box made that cell 34px
+  // tall instead of 30, so its caption sat 2px above the two beside it.
+  assert.ok(/\.td-stat-value\{[^}]*height:30px/.test(client), 'the value row has a fixed height')
+  assert.ok(/\.td-stat-value small\{[^}]*line-height:30px/.test(client), 'its unit shares that height')
+})
+
 test('the section opens with the identity block, without a title or a status', () => {
   // The Settings nav already names the section, and a background rescan does not
   // announce itself. The first element is the avatar, offset so its top edge
@@ -104,7 +111,9 @@ test('the section opens with the identity block, without a title or a status', (
   assert.ok(!/className: 'td-top'/.test(client), 'no title row')
   assert.ok(!/td-title/.test(client), 'no title')
   assert.ok(!/td-note/.test(client), 'no scan status')
-  assert.ok(/padding-top:10px/.test(client), 'the section takes the nav offset')
+  // 10px is how far the nav list sits below the panel body; 9px more is the nav
+  // row's own top padding, so the avatar's top edge meets the TEXT's top edge.
+  assert.ok(/padding-top:19px/.test(client), 'the section takes the nav text offset')
   assert.ok(!/scanText/.test(client), 'the status text helper is gone')
 })
 
