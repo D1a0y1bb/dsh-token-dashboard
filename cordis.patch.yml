@@ -1,0 +1,8 @@
+# dsh-token-dashboard bundle patch.
+#
+# One host row. The browser half is discovered through the package's
+# `dsh.client` manifest and its `./client` export, so no second row is needed.
+- insert:
+    - id: token-dashboard
+      name: 'dsh-token-dashboard'
+      config: {}

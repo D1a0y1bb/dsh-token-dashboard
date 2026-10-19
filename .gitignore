@@ -1,0 +1,7 @@
+node_modules/
+*.log
+.DS_Store
+usage.sqlite
+usage.sqlite-journal
+usage.sqlite-wal
+usage.sqlite-shm
