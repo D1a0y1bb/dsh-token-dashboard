@@ -59,13 +59,13 @@ test('the aggregated payload is cached across polls', () => {
     'the cache must be keyed by the formatting zone as well')
 })
 
-test('the activity grid shows twelve months and fits the card', () => {
-  // Twelve months is fifty-three columns. The cell must be the exact quotient of
-  // the card's inner width, or the tracks overflow the card edge.
-  assert.ok(/const startMonth = tm - 11/.test(client), 'the window is twelve months')
-  assert.ok(/--td-cell-size:min\(calc\(\(100cqw/.test(client), 'the cell divides the width')
-  assert.ok(/!labelled.has\(monthKey\)/.test(client), 'each month is labelled once')
-  assert.ok(/td-lv5/.test(client), 'the palette has five steps')
+test('the activity grid is one row, January through December', () => {
+  // The ask is one band: 1月 on the left, 12月 on the right.
+  assert.ok(/rows: \[band\(1, 12\)\]/.test(client), 'the year is a single band')
+  assert.ok(/band\(1, 12\)/.test(client), 'the band covers all twelve months')
+  // A year is 53 weeks, so the cell is the card width divided by 53.
+  assert.ok(/--td-cell-size:calc\(\(100cqw - 36px - 104px\) \/ 53\)/.test(client),
+    'the cell divides the card width by 53 columns')
 })
 
 test('the heatmap does not single out today', () => {
