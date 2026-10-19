@@ -200,3 +200,43 @@ test('an empty log folds to nothing', () => {
   assert.deepEqual(rows, [])
   assert.equal(reset, false)
 })
+
+test('a session title is carried in the fold state', () => {
+  const first = foldCalls([
+    header('p', 'm'),
+    { type: 'session/title', data: { title: 'first title' } },
+    message(1, 1, { inputTokens: 10, outputTokens: 1 }),
+  ])
+  assert.equal(first.state.title, 'first title')
+  // A later read only sees appended events, so the title must survive.
+  const second = foldCalls([
+    message(1, 2, { inputTokens: 20, outputTokens: 2 }),
+  ], first.state)
+  assert.equal(second.state.title, 'first title')
+})
+
+test('a newer title replaces the older one', () => {
+  const result = foldCalls([
+    { type: 'session/title', data: { title: 'old' } },
+    { type: 'session/title', data: { title: 'new' } },
+  ])
+  assert.equal(result.state.title, 'new')
+})
+
+test('an empty or malformed title is ignored', () => {
+  const result = foldCalls([
+    { type: 'session/title', data: { title: 'kept' } },
+    { type: 'session/title', data: { title: '   ' } },
+    { type: 'session/title', data: { title: 42 } },
+    { type: 'session/title', data: {} },
+  ])
+  assert.equal(result.state.title, 'kept')
+})
+
+test('a title is not counted as a billed call', () => {
+  const { rows } = foldCalls([
+    header('p', 'm'),
+    { type: 'session/title', data: { title: 'a name' } },
+  ])
+  assert.equal(rows.length, 0)
+})

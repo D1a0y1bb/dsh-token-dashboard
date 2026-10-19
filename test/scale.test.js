@@ -58,3 +58,42 @@ test('the aggregated payload is cached across polls', () => {
   assert.ok(/cachedView = \{ zone, projects, models, rows \}/.test(host),
     'the cache must be keyed by the formatting zone as well')
 })
+
+test('the activity grid covers a full year with twelve month labels', () => {
+  // The reference shows 1月 through 12月 in order; thirteen labels means the
+  // grid starts a month early and the ruler no longer matches the calendar.
+  assert.ok(/const startMonth = month - 11/.test(client), 'the window is twelve months')
+  assert.ok(/monthKey >= firstLabelMonth && monthKey <= lastLabelMonth/.test(client),
+    'only months inside the window are labelled')
+  assert.ok(/td-lv5/.test(client), 'the palette has five steps')
+})
+
+test('every stat cell shares one structure and one height', () => {
+  // Three rows in the main cell against two in the others made one card taller
+  // than its neighbours.
+  assert.ok(/\.td-stat\{[^}]*min-height:104px/.test(client), 'cells declare a shared minimum height')
+  // Count the rendered cells, not the CSS selectors or the 'td-stats' wrapper,
+  // both of which start the same way.
+  const cells = client.match(/className: 'td-stat(?: td-stat-main)?' \}/g)
+  assert.equal(cells?.length, 4, 'four stat cells')
+})
+
+test('the section declares itself a size container', () => {
+  // The Settings panel is a fixed-width modal: a viewport query would size the
+  // cards for the window and cram four columns into a narrow panel.
+  assert.ok(/container-type:inline-size/.test(client), 'the section is a query container')
+  assert.ok(/@container \(min-width:600px\)/.test(client), 'the wide layout is a container query')
+})
+
+test('the top row puts the live note beside the title', () => {
+  assert.ok(/td-top-lead/.test(client), 'the title and note share a lead group')
+  assert.ok(/\.td-top\{[^}]*justify-content:space-between/.test(client),
+    'the range sits at the far edge of the row')
+})
+
+test('the account picture is read from the account service', () => {
+  // There is no other copy of it in the client.
+  assert.ok(/createAvatarStore/.test(client), 'the picture has a shared store')
+  assert.ok(/remote\.account\.getProfile/.test(client), 'the picture comes from the account read')
+  assert.ok(/td-avatar-strip/.test(client), 'the picture has a strip of its own')
+})
