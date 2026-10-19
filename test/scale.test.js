@@ -59,13 +59,20 @@ test('the aggregated payload is cached across polls', () => {
     'the cache must be keyed by the formatting zone as well')
 })
 
-test('the activity grid covers a full year with twelve month labels', () => {
-  // The reference shows 1月 through 12月 in order; thirteen labels means the
-  // grid starts a month early and the ruler no longer matches the calendar.
-  assert.ok(/const startMonth = month - 11/.test(client), 'the window is twelve months')
-  assert.ok(/monthKey >= firstLabelMonth && monthKey <= lastLabelMonth/.test(client),
-    'only months inside the window are labelled')
+test('the activity grid is the calendar year, January through December', () => {
+  // The ruler must read 1月 through 12月 in order. A rolling window starts
+  // wherever the current month is and the ruler no longer matches the calendar.
+  assert.ok(/const firstOfRange = `\$\{year\}-01-01`/.test(client), 'the grid starts in January')
+  assert.ok(/const lastOfRange = `\$\{year\}-12-31`/.test(client), 'the grid ends in December')
+  assert.ok(/!labelled.has\(monthKey\)/.test(client), 'each month is labelled once')
   assert.ok(/td-lv5/.test(client), 'the palette has five steps')
+})
+
+test('the heatmap does not single out today', () => {
+  // A ring on one cell of a year reads as an error, not as emphasis.
+  assert.ok(/--td-heat-outline/.test(client), 'the marker is a hairline, not a highlight')
+  assert.ok(!/data-today\]\{outline:1\.5px solid var\(--td-heat-strong\)/.test(client),
+    'today is not outlined in the accent colour')
 })
 
 test('every stat cell shares one structure and one height', () => {
