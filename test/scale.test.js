@@ -116,30 +116,26 @@ function brandOf(provider, model) {
   return BRANDS.find((brand) => brand.match.test(text))
 }
 
-test('every model family in the ledger has a brand mark', () => {
-  // An unknown family still renders, but the families this install actually
-  // uses must each have their own glyph: two initials cannot tell
-  // `deepseek-flash` from `deepseek-v4-pro`.
-  const families = {
+test('families with an official mark get one, and the rest fall back', () => {
+  // A hand-drawn approximation is worse than no icon: it reads as a bug. Only
+  // families whose real mark is in the set get a glyph.
+  const withMark = {
     deepseek: ['deepseek-account', 'deepseek-v4.1-flash'],
-    glm: ['buddy', 'glm-5.3-flash'],
     gemini: ['gemini', 'gemini-3.8-flash'],
     kimi: ['opencode-go', 'kimi-k2.7-code'],
     qwen: ['opencode-go', 'qwen3.8-flash'],
     openai: ['workbuddy', 'gpt-6-astra'],
     claude: ['buddy', 'claude-opus-5-5'],
-    grok: ['xai', 'grok-4.7'],
-    mimax: ['minimax', 'minimax-m3'],
+    minimax: ['minimax', 'minimax-m3'],
     mimo: ['xiaomi', 'mimo-v2.6-flash'],
-    hunyuan: ['tencent', 'hy3'],
-    step: ['stepfun', 'step-5-preview'],
-    ling: ['inclusionai', 'ling-3.1-flash'],
   }
-  for (const [name, [provider, model]] of Object.entries(families)) {
+  for (const [name, [provider, model]] of Object.entries(withMark)) {
     assert.ok(brandOf(provider, model) !== undefined, `${name} has a mark`)
   }
-  // A model nobody has a mark for still renders, through the initials.
-  assert.equal(brandOf('nobody', 'unheard-of-model'), undefined)
+  // A family with no official mark uses the initials instead of an invention.
+  for (const [provider, model] of [['nobody', 'unheard-of-model'], ['xai', 'grok-4.7']]) {
+    assert.equal(brandOf(provider, model), undefined, `${model} falls back`)
+  }
 })
 
 test('a brand mark carries its own colour and a valid SVG body', () => {
