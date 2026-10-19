@@ -59,10 +59,11 @@ test('the aggregated payload is cached across polls', () => {
     'the cache must be keyed by the formatting zone as well')
 })
 
-test('the activity grid shows a readable window of months', () => {
-  // Fifty-three columns cap a cell at about 10px in this panel, so a full year
-  // is unreadable. The window is short enough for the cells to be legible.
-  assert.ok(/const startMonth = tm - 5/.test(client), 'the window is short enough to read')
+test('the activity grid shows twelve months and fits the card', () => {
+  // Twelve months is fifty-three columns. The cell must be the exact quotient of
+  // the card's inner width, or the tracks overflow the card edge.
+  assert.ok(/const startMonth = tm - 11/.test(client), 'the window is twelve months')
+  assert.ok(/--td-cell-size:min\(calc\(\(100cqw/.test(client), 'the cell divides the width')
   assert.ok(/!labelled.has\(monthKey\)/.test(client), 'each month is labelled once')
   assert.ok(/td-lv5/.test(client), 'the palette has five steps')
 })
