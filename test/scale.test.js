@@ -96,10 +96,16 @@ test('the section declares itself a size container', () => {
   assert.ok(/@container \(min-width:600px\)/.test(client), 'the wide layout is a container query')
 })
 
-test('the top row puts the live note beside the title', () => {
-  assert.ok(/td-top-lead/.test(client), 'the title and note share a lead group')
-  assert.ok(/\.td-top\{[^}]*justify-content:space-between/.test(client),
-    'the range sits at the far edge of the row')
+test('the section opens with the identity block, without a title or a status', () => {
+  // The Settings nav already names the section, and a background rescan does not
+  // announce itself. The first element is the avatar, offset so its top edge
+  // lands on the nav row's top edge: the Host draws its nav list 10px below the
+  // panel body's top edge.
+  assert.ok(!/className: 'td-top'/.test(client), 'no title row')
+  assert.ok(!/td-title/.test(client), 'no title')
+  assert.ok(!/td-note/.test(client), 'no scan status')
+  assert.ok(/padding-top:10px/.test(client), 'the section takes the nav offset')
+  assert.ok(!/scanText/.test(client), 'the status text helper is gone')
 })
 
 test('the profile card is the user\'s own, not the account\'s', () => {
