@@ -122,6 +122,17 @@ test('the picked file is read before the input is reset', () => {
   assert.ok(filesAt < clearAt, 'the file is read before the input is reset')
 })
 
+test('a saved profile survives a remount', () => {
+  // The store kept its first read forever, and a save updated only the section's
+  // own state. Closing and reopening Settings therefore showed the old value and
+  // the picture appeared to vanish.
+  assert.ok(/put\(next\)/.test(client), 'the store accepts a saved value')
+  assert.ok(/avatarRef\.current\?\.put\?\.\(stored\)/.test(client), 'a save writes through the store')
+  assert.ok(/avatar\.reload\?\.\(\)/.test(client), 'a remount re-reads from disk')
+  // The × beside the picture was removed: replacing it is the same click.
+  assert.ok(!/td-avatar-clear/.test(client), 'no clear button beside the picture')
+})
+
 test('clearing the picture is a save, not an unsupported value', () => {
   // The first version rejected the empty string as "unsupported", so a cleared
   // picture could never be removed.
