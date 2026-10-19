@@ -97,11 +97,14 @@ test('the section declares itself a size container', () => {
 })
 
 test('every stat caption sits on its row baseline', () => {
-  // The rate cell carries a small unit whose own line box made that cell 34px
-  // tall instead of 30, so its caption sat 2px above the two beside it.
+  // The rate cell used to carry a small unit whose own line box made that cell
+  // 34px tall instead of 30, so its caption sat 2px above the two beside it.
+  // The unit is now the same size as the figure and shares the row outright.
   assert.ok(/\.td-stat-value\{[^}]*height:30px/.test(client), 'the value row has a fixed height')
-  assert.ok(/\.td-stat-value small\{[^}]*line-height:30px/.test(client), 'its unit shares that height')
+  assert.ok(!/\.td-stat-value small/.test(client), 'no smaller unit inside the value row')
+  assert.ok(!/h\('small', null, 'tok\/s'\)/.test(client), 'the unit is part of the figure')
 })
+
 
 test('the section opens with the identity block, without a title or a status', () => {
   // The Settings nav already names the section, and a background rescan does not
