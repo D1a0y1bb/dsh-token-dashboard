@@ -84,7 +84,7 @@ test('every stat cell shares one structure and one height', () => {
   // Count the rendered cells, not the CSS selectors or the 'td-stats' wrapper,
   // both of which start the same way.
   // Six cells, drawn as two rows of three.
-  const cells = client.match(/className: 'td-stat(?: td-stat-main)?' \}/g)
+  const cells = client.match(/className: 'td-stat(?: td-stat-main)?'/g)
   assert.equal(cells?.length, 6, 'six stat cells')
   assert.ok(/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/.test(client), 'three per row')
 })
@@ -173,7 +173,7 @@ test('reasoning tokens are folded and carried to the page', () => {
   // The value is recorded in the log and is a real cost driver on these models.
   assert.ok(/reasoning: count\(usage\.reasoningTokens\)/.test(index), 'the fold reads it')
   assert.ok(/addColumn\('calls', 'reasoning'/.test(index), 'the ledger stores it')
-  assert.ok(/bucket\[16\] \+= group\.reasoning/.test(index), 'the payload carries it')
+  assert.ok(/bucket\[15\] \+= group\.reasoning/.test(index), 'the payload carries it')
 })
 
 test('the first card shows one estimated cost', () => {
@@ -255,4 +255,52 @@ test('a brand mark carries its own colour and a valid SVG body', () => {
   assert.match(brand.color, /^#[0-9A-Fa-f]{6}$/)
   assert.ok(brand.paths.length > 20, 'the mark has a real path')
   assert.ok(!/currentColor/.test(brand.color), 'the colour is a literal so it does not inherit')
+})
+
+test('the section opens on the daily range', () => {
+  // "进去后默认应该是每日的视图" — the first paint shows today, not a week.
+  assert.ok(/const \[rangeId, setRangeId\] = useState\('1d'\)/.test(client),
+    'the default range is the daily preset')
+  assert.ok(/ranges\.find\(item => item\.id === rangeId\) \?\? ranges\[0\]/.test(client),
+    'an unknown range falls back to the first preset, which is daily')
+})
+
+test('every host request goes through the shared helper', () => {
+  // The helper adds the deadline and the unmount abort. A bare `fetch` here
+  // would spin forever when the host stops answering.
+  const calls = client.match(/await fetch\(/g) ?? []
+  assert.equal(calls.length, 1, 'only the helper itself calls fetch')
+  assert.ok(/async function postJSON\(url, payload, signal\)/.test(client), 'the helper exists')
+  assert.ok(/REQUEST_TIMEOUT_MS = 20_000/.test(client), 'the request has a deadline')
+  assert.ok(/controller\.abort\(\)/.test(client), 'the request can be aborted')
+})
+
+test('the dead share ring is gone', () => {
+  // The ring chart stopped rendering in 1.1.x; the component and its keyframes
+  // stayed behind and read like live code.
+  assert.ok(!/function Ring\(/.test(client), 'no Ring component')
+  assert.ok(!/td-ring/.test(client), 'no ring styles or keyframes')
+  assert.ok(!/td-profile/.test(client), 'no profile-panel styles')
+  assert.ok(!/td-delta/.test(client), 'no delta badge styles')
+})
+
+test('the payload column count matches the host row', () => {
+  // The constants are hand-written on both sides; a drift silently reads the
+  // wrong column instead of failing.
+  const host = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+  const zeros = host.match(/const bucket = buckets\.get\(id\) \?\? \[\.\.\.row, ((?:0, )*0)\]/)
+  assert.ok(zeros, 'the host row is initialised from the key columns')
+  const width = 3 + zeros[1].split(',').length
+  assert.equal(width, 16, 'the host sends 16 columns')
+  const last = client.match(/const REASONING = (\d+)/)
+  assert.equal(Number(last?.[1]), width - 1, 'the client reads the last column by the same index')
+  assert.ok(!/meteredCost/.test(client), 'the client no longer reads the retired column')
+})
+
+test('the rate card says how much of the range it covers', () => {
+  // Only a small slice of real calls has a usable decode window, so the figure
+  // is not a whole-range average and must say so.
+  assert.ok(/t\('rateSample', \{ share: timedShare \}\)/.test(client), 'the coverage share is shown')
+  assert.ok(/t\('rateHint'/.test(client), 'the cell explains the discarded samples')
+  assert.ok(/total\.timedCalls/.test(client), 'the count comes from the payload')
 })

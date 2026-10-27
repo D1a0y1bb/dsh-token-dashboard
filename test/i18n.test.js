@@ -56,7 +56,14 @@ test('every message names its placeholders in both languages', () => {
       if (value === null) continue
       const [, key, text] = value
       const placeholders = [...text.matchAll(/\{(\w+)\}/g)].map(hit => hit[1]).sort()
-      const expected = { readingProgress: ['done', 'total'], failedWith: ['message'], dayCount: ['n'], drillCount: ['count'] }[key]
+      const expected = {
+        readingProgress: ['done', 'total'],
+        failedWith: ['message'],
+        dayCount: ['n'],
+        drillCount: ['count'],
+        rateSample: ['share'],
+        rateHint: ['calls', 'n', 'share'],
+      }[key]
       assert.deepEqual(placeholders, expected ?? [], `${name}.${key}`)
       // A template must not be translated into a bare string or vice versa:
       // the slot kit replaces `{name}` only when the text still has it.
