@@ -96,9 +96,13 @@ test('every stat cell shares one structure and one height', () => {
 
 test('the section declares itself a size container', () => {
   // The Settings panel is a fixed-width modal: a viewport query would size the
-  // cards for the window and cram four columns into a narrow panel.
+  // cards for the window and cram the grid into a narrow panel.
   assert.ok(/container-type:inline-size/.test(client), 'the section is a query container')
-  assert.ok(/@container \(min-width:600px\)/.test(client), 'the wide layout is a container query')
+  // Six cells stay three per row at every width. A wide-panel rule used to put
+  // four in the first row while the separators still assumed three.
+  assert.ok(!/@container[^{]*\{[^}]*\.td-stats/.test(client), 'no rule overrides the stat columns')
+  const columns = client.match(/\.td-stats\{[^}]*grid-template-columns:repeat\((\d+)/)
+  assert.equal(Number(columns?.[1]), 3, 'three columns, at any width')
 })
 
 test('every stat caption sits on its row baseline', () => {
