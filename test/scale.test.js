@@ -61,9 +61,14 @@ test('the aggregated payload is cached across polls', () => {
 })
 
 test('the activity grid is one row, January through December', () => {
-  // The ask is one band: 1月 on the left, 12月 on the right.
-  assert.ok(/rows: \[band\(1, 12\)\]/.test(client), 'the year is a single band')
-  assert.ok(/band\(1, 12\)/.test(client), 'the band covers all twelve months')
+  // The ask is one band: 1月 on the left, 12月 on the right. The band is built
+  // once, by a helper the share card also draws from, so the panel and the
+  // exported picture cannot disagree.
+  assert.ok(/function yearBand\(days, uiLocale\)/.test(client), 'the year band has one builder')
+  assert.ok(/const cells = useMemo\(\(\) => yearBand\(days, uiLocale\)/.test(client),
+    'the heat map draws the year from it')
+  assert.ok(/const first = `\$\{year\}-01-01`/.test(client), 'the band starts on 1 January')
+  assert.ok(/const last = `\$\{year\}-12-31`/.test(client), 'the band ends on 31 December')
   // A year is 53 weeks, so the cell is the card width divided by 53.
   assert.ok(/--td-cell-size:calc\(\(100cqw - 36px - 104px\) \/ 53\)/.test(client),
     'the cell divides the card width by 53 columns')
@@ -303,4 +308,42 @@ test('the rate card says how much of the range it covers', () => {
   assert.ok(/t\('rateSample', \{ share: timedShare \}\)/.test(client), 'the coverage share is shown')
   assert.ok(/t\('rateHint'/.test(client), 'the cell explains the discarded samples')
   assert.ok(/total\.timedCalls/.test(client), 'the count comes from the payload')
+})
+
+test('the share card is one 4:5 picture drawn locally', () => {
+  // The picture is a designed artefact, not a screenshot, and nothing leaves
+  // the machine: no new route, no third-party renderer.
+  assert.ok(/const SHARE_WIDTH = 1080/.test(client), 'the card is 1080 wide')
+  assert.ok(/const SHARE_HEIGHT = 1350/.test(client), 'and 1350 tall, which is 4:5')
+  assert.ok(/function drawShare\(canvas, \{/.test(client), 'one function draws it')
+  assert.ok(!/import\s/.test(client), 'the browser half has no imports')
+  assert.ok(!/html2canvas|foreignObject/.test(client), 'no third-party rasteriser and no SVG detour')
+})
+
+test('the share card and the panel draw the same year', () => {
+  // A picture that disagrees with the panel it came from is worse than no picture.
+  assert.ok(/band: yearBand\(heatDays, uiLocale\)/.test(client), 'the card builds the band the same way')
+  assert.ok(/heatLevel\(day\.tokens, band\.peak\)/.test(client), 'and colours cells with the same rule')
+})
+
+test('the share card reads the live theme instead of a fixed palette', () => {
+  // A canvas cannot parse `color-mix()`, so each colour is resolved by painting
+  // one pixel and reading it back — that is also what makes it follow the theme.
+  assert.ok(/function shareColours\(host\)/.test(client), 'colours come from the host element')
+  assert.ok(/getComputedStyle\(host\)/.test(client), 'read from computed style')
+  assert.ok(/fillRect\(0, 0, 1, 1\)/.test(client), 'resolved through a one-pixel probe')
+  assert.ok(/function markColour\(hex, colours\)/.test(client), 'a mark keeps contrast on either theme')
+})
+
+test('the share card can be copied and saved, and says when copying fails', () => {
+  assert.ok(/new ClipboardItem\(\{ 'image\/png': blob \}\)/.test(client), 'copy puts a PNG on the clipboard')
+  assert.ok(/anchor\.download = `token-usage-\$\{data\.stamp\}\.png`/.test(client), 'download names the file')
+  assert.ok(/t\('shareCopyFailed'\)/.test(client), 'a failed copy is reported, not silent')
+  assert.ok(/URL\.revokeObjectURL\(url\)/.test(client), 'the blob URL is released')
+})
+
+test('the share card only shows what the range actually contains', () => {
+  // "18.9B" without a range reads as all time; the card states the range.
+  assert.ok(/rangeText: rangeLabel\(rangeId, t\)/.test(client), 'the range travels with the picture')
+  assert.ok(/\$\{labels\.tokens\} · \$\{rangeText\}/.test(client), 'and is drawn beside the token total')
 })
